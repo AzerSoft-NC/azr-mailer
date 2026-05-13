@@ -1,0 +1,25 @@
+services:
+  mailer:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      NODE_ENV: "development"
+      # Dev: relax auth unless you uncomment and set AUTH_TOKEN
+      REQUIRE_AUTH: "false"
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      # Browser tests from local static dev server (adjust as needed)
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:4321}
+      BEHIND_PROXY: "false"
+      # AUTH_TOKEN: ${AUTH_TOKEN:-}
+      # APP_TOKENS_JSON: '{"my-app":"dev-token"}'
+    depends_on:
+      - mailhog
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"

@@ -1,0 +1,9 @@
+# Copier en .deploy (non versionné). Connexion SSH par mot de passe (sshpass).
+
+DROPLET_IP=your.droplet.ip
+DROPLET_USER=deploy
+DROPLET_PWD="your-ssh-password"
+
+# Racine des releases sur le serveur (optionnel, défaut ci-dessous)
+# Les dossiers ${DEPLOY_BASE_PATH}/${VERSION} s’accumulent ; current pointe sur la dernière.
+DEPLOY_BASE_PATH=/var/www/azersoft
