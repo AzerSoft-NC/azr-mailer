@@ -113,6 +113,19 @@ Voir [`.env.example`](.env.example) pour la liste commentée. Résumé :
 | `CAPTCHA_ENABLED` | non | `false` ; si `true` sans implémentation → `501` |
 | `LOG_LEVEL` | non | `info` |
 
+## K3s (platform)
+
+Service ClusterIP, namespace `platform` : `http://mail.platform.svc.cluster.local:3000`.
+
+| Env | SMTP | Auth |
+|-----|------|------|
+| local (k3d) | MailHog `mailhog:1025` | `REQUIRE_AUTH=false` |
+| droplet | `mail.smtp.host` in `ci/k3s/values/droplet.yaml` | Secret `platform-mail` |
+
+Image `ghcr.io/azersoft-nc/azr-mailer` is built by [`.github/workflows/publish.yml`](.github/workflows/publish.yml) on push to `main`. Readiness is `GET /ready` (needs `SMTP_HOST`). Liveness stays `GET /health`.
+
+No edge route. Callers are other workloads in the cluster. Public `/mail` on Nginx is the Compose-era path — see [docs/reverse-proxy-mail.md](docs/reverse-proxy-mail.md).
+
 ## Reverse proxy (`/mail`)
 
 Public typique : `https://apps.azersoft.nc/mail` → le backend doit recevoir `/v1/send`, pas `/mail/v1/send`. Voir [docs/reverse-proxy-mail.md](docs/reverse-proxy-mail.md).

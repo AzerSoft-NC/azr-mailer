@@ -1,5 +1,7 @@
 # Reverse proxy: `https://apps.azersoft.nc/mail`
 
+K3s does not publish this prefix. Apps call `http://mail.platform.svc.cluster.local:3000` (ClusterIP). The snippet below is only for a Compose / host Nginx setup that still exposes `/mail`.
+
 The app listens on paths like `/v1/send` and `/health` at the **container root**. If your public URL is prefixed (e.g. `/mail`), configure the proxy to **strip** the prefix so upstream requests hit `/v1/send`, not `/mail/v1/send`.
 
 ## Nginx (strip prefix)
