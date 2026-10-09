@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { parseAppFromDomainsJson } from "./fromDomain.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "..");
@@ -73,6 +74,7 @@ export function loadConfig(env = process.env) {
 
   const appTokens = parseAppTokensJson(env.APP_TOKENS_JSON);
   const allowedAppIds = parseCsvStrings(env.ALLOWED_APP_IDS);
+  const appFromDomains = parseAppFromDomainsJson(env.APP_FROM_DOMAINS_JSON);
 
   return {
     nodeEnv,
@@ -85,6 +87,13 @@ export function loadConfig(env = process.env) {
 
     /** If set, only these appIds allowed when using global AUTH_TOKEN mode */
     allowedAppIds,
+
+    /**
+     * If set: map appId -> allowed From: domains (exact match).
+     * When present, every send for that appId must use a listed domain.
+     * AppIds missing from the map are rejected with from_domain_forbidden.
+     */
+    appFromDomains,
 
     allowedOrigins: parseCsvOrigins(env.ALLOWED_ORIGINS),
 
