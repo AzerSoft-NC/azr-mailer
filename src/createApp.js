@@ -17,6 +17,7 @@ import {
 } from "./validation/schemas.js";
 import { sanitizeTextField } from "./sanitize.js";
 import { validateCaptchaIfEnabled } from "./captcha.js";
+import { isFromDomainAllowed } from "./fromDomain.js";
 
 /** @param {ReturnType<typeof loadConfig>} config */
 function buildDefaultTransporter(config) {
@@ -155,6 +156,18 @@ export function createApp(opts = {}) {
 
       if (config.allowedAppIds && !config.allowedAppIds.includes(parsed.appId)) {
         return sendError(res, 403, "app_forbidden", "appId is not allowed");
+      }
+
+      if (config.appFromDomains) {
+        const domains = config.appFromDomains[parsed.appId];
+        if (!domains || !isFromDomainAllowed(parsed.from, domains)) {
+          return sendError(
+            res,
+            403,
+            "from_domain_forbidden",
+            "from domain is not allowed for this appId",
+          );
+        }
       }
 
       if (config.honeypotField) {

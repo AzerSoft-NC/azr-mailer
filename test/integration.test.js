@@ -29,6 +29,8 @@ function defaultTestEnv() {
     BEHIND_PROXY: "false",
     CAPTCHA_ENABLED: "false",
     HONEYPOT_FIELD: "",
+    APP_TOKENS_JSON: undefined,
+    APP_FROM_DOMAINS_JSON: undefined,
   });
 }
 
@@ -188,6 +190,65 @@ describe("azr-mailer integration", () => {
     assert.equal(r2.status, 200);
     assert.equal(r3.status, 429);
     assert.equal(r3.body.error.code, "rate_limited");
+  });
+
+  test("POST /v1/send enforces APP_FROM_DOMAINS_JSON per appId", async () => {
+    applyEnv({
+      AUTH_TOKEN: "",
+      APP_TOKENS_JSON: JSON.stringify({
+        "client-a": "token-a",
+        "client-b": "token-b",
+      }),
+      APP_FROM_DOMAINS_JSON: JSON.stringify({
+        "client-a": ["client-a.nc"],
+        "client-b": ["client-b.com"],
+      }),
+    });
+    const transporter = {
+      sendMail: async (/** @type {any} */ mail) => {
+        sent.push(mail);
+      },
+    };
+    const app = createApp({ config: loadConfig(), transporter });
+
+    const ok = await request(app)
+      .post("/v1/send")
+      .set("Authorization", "Bearer token-a")
+      .send({
+        appId: "client-a",
+        from: "hello@client-a.nc",
+        to: "to@example.com",
+        subject: "Hello",
+        html: "<p>Hi</p>",
+      });
+    assert.equal(ok.status, 200);
+    assert.equal(sent.length, 1);
+
+    const badDomain = await request(app)
+      .post("/v1/send")
+      .set("Authorization", "Bearer token-a")
+      .send({
+        appId: "client-a",
+        from: "hello@client-b.com",
+        to: "to@example.com",
+        subject: "Hello",
+        html: "<p>Hi</p>",
+      });
+    assert.equal(badDomain.status, 403);
+    assert.equal(badDomain.body.error.code, "from_domain_forbidden");
+
+    const subdomainNotImplied = await request(app)
+      .post("/v1/send")
+      .set("Authorization", "Bearer token-a")
+      .send({
+        appId: "client-a",
+        from: "hello@mail.client-a.nc",
+        to: "to@example.com",
+        subject: "Hello",
+        html: "<p>Hi</p>",
+      });
+    assert.equal(subdomainNotImplied.status, 403);
+    assert.equal(subdomainNotImplied.body.error.code, "from_domain_forbidden");
   });
 
   test("POST /send legacy still works and exposes deprecation headers", async () => {

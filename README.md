@@ -100,6 +100,7 @@ Voir [`.env.example`](.env.example) pour la liste commentée. Résumé :
 | `AUTH_TOKEN` | si pas `APP_TOKENS_JSON` | Bearer / `x-api-key` |
 | `APP_TOKENS_JSON` | alternative multi-app | JSON `{"appId":"token",...}` |
 | `ALLOWED_APP_IDS` | non | Sous-ensemble d’`appId` autorisés (mode `AUTH_TOKEN`) |
+| `APP_FROM_DOMAINS_JSON` | recommandé multi-clients | JSON `{"appId":["domaine.nc",…]}` — domaine exact du `from` |
 | `ALLOWED_ORIGINS` | fortement recommandé navigateurs | CSV ; vide = garde `Origin` désactivée (serveur-à-serveur uniquement) |
 | `SMTP_HOST` | oui | requis pour `/ready` et envoi |
 | `SMTP_PORT` | non | `587` |
@@ -160,6 +161,7 @@ L’origine de la **page** doit figurer dans `ALLOWED_ORIGINS` (ex. `https://aze
 | `legacy_auth_unsupported` | 401 | Multi-tenant actif sans `AUTH_TOKEN` pour `/send` |
 | `origin_not_allowed` | 403 | Header `Origin` présent et non listé |
 | `app_forbidden` | 403 | `appId` hors `ALLOWED_APP_IDS` |
+| `from_domain_forbidden` | 403 | Domaine de `from` hors `APP_FROM_DOMAINS_JSON` pour cet `appId` |
 | `rate_limited` | 429 | Trop de requêtes |
 | `smtp_not_configured` | 500 | `SMTP_HOST` absent |
 | `auth_misconfigured` | 500 | `REQUIRE_AUTH` sans token configuré |
@@ -190,9 +192,27 @@ npm test
 
 Les tests utilisent un transport SMTP mock (pas de réseau).
 
+## Multi-clients : domaines `from`
+
+Quand plusieurs sites envoient via le même mailer, configurez :
+
+1. `APP_TOKENS_JSON` — un secret par `appId`
+2. `APP_FROM_DOMAINS_JSON` — domaines autorisés en `from` pour chaque `appId` (match exact, sans sous-domaines implicites)
+
+Exemple :
+
+```bash
+APP_TOKENS_JSON='{"client-a":"secret-a","client-b":"secret-b"}'
+APP_FROM_DOMAINS_JSON='{"client-a":["client-a.nc"],"client-b":["client-b.com","mail.client-b.com"]}'
+```
+
+Si `APP_FROM_DOMAINS_JSON` est défini, un `appId` absent de la map ou un `from` hors liste → `403 from_domain_forbidden`.
+
+Plan Postfix outbound (cluster) + script DNS : [docs/azr-ci-outbound-postfix-plan.md](docs/azr-ci-outbound-postfix-plan.md).
+
 ## Phase 2 (idées)
 
 - Fournisseur captcha réel + secret serveur
-- Allowlist domaines `from` / `to` par `appId`
+- Allowlist domaines `to` par `appId`
 - Métriques Prometheus / OpenTelemetry
 - Endpoint `text` ou pièces jointes bornées
